@@ -37,7 +37,7 @@ export function SearchFilter({
     const hasCarCats = carCategories.length > 0;
     const hasProductCats = productCategories.length > 0;
     if (hasCarCats && hasProductCats) return;
-    setLoadingCats(true);
+    window.setTimeout(() => setLoadingCats(true), 0);
     Promise.all([
       hasCarCats ? Promise.resolve(carCategories) : loadCarCategories(),
       hasProductCats ? Promise.resolve(productCategories) : loadProductCategories(),

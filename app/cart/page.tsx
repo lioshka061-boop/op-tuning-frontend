@@ -5,11 +5,7 @@ import { getCart, removeFromCart, incrementCartItem, setCartItemQuantity, CartIt
 import { SimpleTopbar } from '../components/SimpleTopbar';
 
 export default function CartPage() {
-  const [items, setItems] = useState<CartItem[]>([]);
-
-  useEffect(() => {
-    setItems(getCart());
-  }, []);
+  const [items, setItems] = useState<CartItem[]>(() => getCart());
 
   const total = items.reduce((sum, i) => sum + (i.price || 0) * (i.quantity || 1), 0);
 

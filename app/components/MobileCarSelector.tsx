@@ -23,11 +23,18 @@ export function MobileCarSelector({ carCategories: initialCars = [] }: Props) {
 
   useEffect(() => {
     if (carCategories.length > 0) return;
-    setLoadingCats(true);
-    loadCarCategories()
-      .then((data) => setCarCategories(Array.isArray(data) ? data : []))
-      .catch(() => setCarCategories([]))
-      .finally(() => setLoadingCats(false));
+    const loadCategories = async () => {
+      setLoadingCats(true);
+      try {
+        const data = await loadCarCategories();
+        setCarCategories(Array.isArray(data) ? data : []);
+      } catch {
+        setCarCategories([]);
+      } finally {
+        setLoadingCats(false);
+      }
+    };
+    void loadCategories();
   }, [carCategories.length]);
 
   useEffect(() => {

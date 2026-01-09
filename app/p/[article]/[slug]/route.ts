@@ -1,12 +1,13 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { loadProduct } from '../../../lib/products';
 
 export async function GET(
-  request: Request,
-  { params }: { params: { article: string } },
+  request: NextRequest,
+  { params }: { params: Promise<{ article: string; slug: string }> },
 ) {
-  const article = decodeURIComponent(params.article);
-  const product = await loadProduct(article, { revalidate: 300 });
+  const { article } = await params;
+  const decoded = decodeURIComponent(article);
+  const product = await loadProduct(decoded, { revalidate: 300 });
 
   if (!product?.path) {
     return new NextResponse('Not Found', { status: 404 });

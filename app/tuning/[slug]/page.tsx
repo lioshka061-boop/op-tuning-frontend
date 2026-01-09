@@ -9,8 +9,9 @@ const PAGE_TYPE = 'tuning';
 const PAGE_LABEL = 'Тюнінг';
 const PER_PAGE = 24;
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const page = await loadSeoPage(PAGE_TYPE, params.slug, { revalidate: 3600 });
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const page = await loadSeoPage(PAGE_TYPE, slug, { revalidate: 3600 });
   if (!page) {
     return {
       title: 'Сторінка не знайдена',
@@ -36,11 +37,12 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default async function TuningSeoPage({ params }: { params: { slug: string } }) {
-  const page = await loadSeoPage(PAGE_TYPE, params.slug, { revalidate: 3600 });
+export default async function TuningSeoPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const page = await loadSeoPage(PAGE_TYPE, slug, { revalidate: 3600 });
   if (!page) notFound();
 
-  const currentPath = `/${PAGE_TYPE}/${params.slug}`;
+  const currentPath = `/${PAGE_TYPE}/${slug}`;
   if (page.path && page.path !== currentPath) {
     permanentRedirect(page.path);
   }

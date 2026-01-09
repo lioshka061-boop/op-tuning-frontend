@@ -33,7 +33,7 @@ export function ReviewsSection({ productKey, isMaxton }: Props) {
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
+    window.setTimeout(() => setLoading(true), 0);
     loadReviews({ product: key, limit: 50 })
       .then((data) => {
         if (!active) return;

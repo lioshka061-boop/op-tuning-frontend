@@ -76,7 +76,7 @@ export function NavBar({ carCategories = [] }: NavBarProps) {
   useEffect(() => {
     const q = query.trim();
     if (q.length < 2) {
-      setSuggestions([]);
+      window.setTimeout(() => setSuggestions([]), 0);
       return;
     }
     const t = window.setTimeout(async () => {
@@ -101,8 +101,10 @@ export function NavBar({ carCategories = [] }: NavBarProps) {
   useEffect(() => {
     const q = mobileQuery.trim();
     if (q.length < 2) {
-      setMobileSuggestions([]);
-      setMobileSuggestOpen(false);
+      window.setTimeout(() => {
+        setMobileSuggestions([]);
+        setMobileSuggestOpen(false);
+      }, 0);
       return;
     }
     const t = window.setTimeout(async () => {

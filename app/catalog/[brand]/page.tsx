@@ -11,17 +11,19 @@ export async function generateMetadata({
   params,
   searchParams,
 }: {
-  params: { brand: string };
-  searchParams?: { pcat?: string; page?: string; perPage?: string };
+  params: Promise<{ brand: string }>;
+  searchParams?: Promise<{ pcat?: string; page?: string; perPage?: string }>;
 }): Promise<Metadata> {
   const carCategories = await loadCarCategories({ revalidate: 900 });
-  const brandSlug = params.brand.toLowerCase();
+  const { brand } = await params;
+  const brandSlug = brand.toLowerCase();
   const brandNode = carCategories.find((c) => (c.slug || slugify(c.name)) === brandSlug);
   const brandName = plainText(brandNode?.name || brandSlug);
   const canonical = brandNode?.canonical || undefined;
-  const page = Number.parseInt(searchParams?.page || '1', 10) || 1;
-  const perPage = Number.parseInt(searchParams?.perPage || '24', 10) || 24;
-  const hasFilters = Boolean(searchParams?.pcat) || page > 1 || perPage !== 24;
+  const resolvedSearchParams = await searchParams;
+  const page = Number.parseInt(resolvedSearchParams?.page || '1', 10) || 1;
+  const perPage = Number.parseInt(resolvedSearchParams?.perPage || '24', 10) || 24;
+  const hasFilters = Boolean(resolvedSearchParams?.pcat) || page > 1 || perPage !== 24;
   const indexable = brandNode?.indexable === true;
   const title = brandNode?.seo_title || brandName;
   const description = brandNode?.seo_description || '';
@@ -37,18 +39,20 @@ export default async function BrandPage({
   params,
   searchParams,
 }: {
-  params: { brand: string };
-  searchParams?: { pcat?: string; page?: string; perPage?: string };
+  params: Promise<{ brand: string }>;
+  searchParams?: Promise<{ pcat?: string; page?: string; perPage?: string }>;
 }) {
-  const brandSlug = params.brand.toLowerCase();
-  const page = Math.max(Number.parseInt(searchParams?.page || '1', 10) || 1, 1);
+  const { brand } = await params;
+  const brandSlug = brand.toLowerCase();
+  const resolvedSearchParams = await searchParams;
+  const page = Math.max(Number.parseInt(resolvedSearchParams?.page || '1', 10) || 1, 1);
   const perPage = (() => {
-    const v = Number.parseInt(searchParams?.perPage || '24', 10);
+    const v = Number.parseInt(resolvedSearchParams?.perPage || '24', 10);
     if ([12, 24, 30].includes(v)) return v;
     return 24;
   })();
   const offset = (page - 1) * perPage;
-  const activeCategorySlug = (searchParams?.pcat || '').toLowerCase();
+  const activeCategorySlug = (resolvedSearchParams?.pcat || '').toLowerCase();
 
   const [carCategories, productCategories, { items, total }] = await Promise.all([
     loadCarCategories({ revalidate: 900 }),

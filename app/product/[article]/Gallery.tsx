@@ -24,7 +24,9 @@ export function Gallery({ images }: Props) {
   }, [hasImages, pics.length]);
 
   useEffect(() => {
-    if (activeIdx >= pics.length) setActiveIdx(0);
+    if (activeIdx >= pics.length) {
+      window.setTimeout(() => setActiveIdx(0), 0);
+    }
   }, [pics, activeIdx]);
 
   useEffect(() => {

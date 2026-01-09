@@ -47,7 +47,7 @@ function CartMenu() {
   }, []);
 
   useEffect(() => {
-    refresh();
+    window.setTimeout(() => refresh(), 0);
     const handler = () => refresh();
     window.addEventListener('cart:add', handler as EventListener);
     window.addEventListener('cart:update', handler as EventListener);
@@ -171,7 +171,7 @@ function FavoritesMenu() {
   }, []);
 
   useEffect(() => {
-    refresh();
+    window.setTimeout(() => refresh(), 0);
     const handler = () => refresh();
     window.addEventListener('favorites:update', handler as EventListener);
     return () => window.removeEventListener('favorites:update', handler as EventListener);
@@ -244,7 +244,7 @@ function GarageMenu() {
   }, []);
 
   useEffect(() => {
-    refresh();
+    window.setTimeout(() => refresh(), 0);
     const handler = () => refresh();
     window.addEventListener('garage:update', handler as EventListener);
     return () => window.removeEventListener('garage:update', handler as EventListener);

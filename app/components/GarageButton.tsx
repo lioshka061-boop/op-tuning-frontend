@@ -5,19 +5,18 @@ import { useEffect, useState } from 'react';
 type GarageCar = { brand: string; model?: string };
 
 export function GarageButton() {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
+  const [count, setCount] = useState(() => {
     try {
       const stored = localStorage.getItem('garageCars');
       if (stored) {
         const parsed = JSON.parse(stored) as GarageCar[];
-        setCount(parsed.length);
+        return parsed.length;
       }
     } catch {
-      setCount(0);
+      // ignore
     }
-  }, []);
+    return 0;
+  });
 
   return (
     <button

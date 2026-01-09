@@ -45,7 +45,9 @@ export function ProductGallery({ images, title }: Props) {
   }, [activeIdx, hasImages, pics.length, scrollToIndex]);
 
   useEffect(() => {
-    if (activeIdx >= pics.length) setActiveIdx(0);
+    if (activeIdx >= pics.length) {
+      window.setTimeout(() => setActiveIdx(0), 0);
+    }
   }, [pics, activeIdx]);
 
   useEffect(() => {

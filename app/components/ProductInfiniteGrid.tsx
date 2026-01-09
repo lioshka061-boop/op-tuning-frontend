@@ -122,21 +122,25 @@ export function ProductInfiniteGrid({
   );
 
   useEffect(() => {
-    setItems(sortByAvailability(uniqueByArticle(initialItems)));
-    const nextOffset = initialOffset + initialItems.length;
-    setOffset(nextOffset);
-    setClientTotal(total);
-    setHasMore(nextOffset < total);
-    setLoading(false);
-    setError(null);
-    loadingRef.current = false;
+    window.setTimeout(() => {
+      setItems(sortByAvailability(uniqueByArticle(initialItems)));
+      const nextOffset = initialOffset + initialItems.length;
+      setOffset(nextOffset);
+      setClientTotal(total);
+      setHasMore(nextOffset < total);
+      setLoading(false);
+      setError(null);
+      loadingRef.current = false;
+    }, 0);
   }, [resetKey, initialItems, initialOffset, total]);
 
   useEffect(() => {
     if (items.length || loadingRef.current) return;
     loadingRef.current = true;
-    setLoading(true);
-    setError(null);
+    window.setTimeout(() => {
+      setLoading(true);
+      setError(null);
+    }, 0);
     fetchProductsClient({ ...fetchParams, offset: 0 })
       .then(({ items: next, total: nextTotal }) => {
         if (nextTotal !== undefined) setClientTotal(nextTotal);

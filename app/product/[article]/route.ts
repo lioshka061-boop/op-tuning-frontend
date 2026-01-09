@@ -3,9 +3,10 @@ import { loadProduct } from '../../lib/products';
 
 export async function GET(
   request: Request,
-  { params }: { params: { article: string } },
+  { params }: { params: Promise<{ article: string }> },
 ) {
-  const raw = decodeURIComponent(params.article);
+  const { article: articleParam } = await params;
+  const raw = decodeURIComponent(articleParam);
   const article = raw.includes('--') ? raw.split('--').pop() || raw : raw;
   if (!article) {
     return new NextResponse('Not Found', { status: 404 });

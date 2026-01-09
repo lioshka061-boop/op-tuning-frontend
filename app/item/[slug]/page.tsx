@@ -244,8 +244,9 @@ function breadcrumbSchema(canonical: string, brandSlug: string, modelSlug: strin
   };
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const data = await resolveProduct(params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const data = await resolveProduct(slug);
   if (!data) {
     return {
       title: 'Товар не знайдено',
@@ -278,12 +279,13 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default async function ItemPage({ params }: { params: { slug: string } }) {
-  const data = await resolveProduct(params.slug);
+export default async function ItemPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const data = await resolveProduct(slug);
   if (!data) notFound();
   const { product, catalog } = data;
   if (product.path && product.path.startsWith('/item/')) {
-    const currentPath = `/item/${params.slug}`;
+    const currentPath = `/item/${slug}`;
     if (product.path !== currentPath) {
       permanentRedirect(product.path);
     }

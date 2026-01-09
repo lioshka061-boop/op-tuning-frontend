@@ -10,19 +10,18 @@ type Props = {
 };
 
 export function FavoriteButton({ article, title, image, path }: Props) {
-  const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
+  const [saved, setSaved] = useState(() => {
     try {
       const stored = localStorage.getItem('favorites');
       if (stored) {
         const list = JSON.parse(stored) as Array<{ article: string }>;
-        setSaved(list.some((f) => f.article === article));
+        return list.some((f) => f.article === article);
       }
     } catch {
-      setSaved(false);
+      // ignore
     }
-  }, [article]);
+    return false;
+  });
 
   const toggle = () => {
     try {
