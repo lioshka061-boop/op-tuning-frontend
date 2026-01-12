@@ -164,6 +164,7 @@ export function ProductInfiniteGrid({
 
   const loadMore = useCallback(() => {
     if (loadingRef.current || loading || !hasMore) return;
+    
     loadingRef.current = true;
     setLoading(true);
     setError(null);
@@ -174,14 +175,20 @@ export function ProductInfiniteGrid({
         }
         if (next.length === 0) {
           setHasMore(false);
+          loadingRef.current = false;
+          setLoading(false);
           return;
         }
         const resolvedTotal = nextTotal ?? clientTotal;
         setItems((prev) => sortByAvailability(uniqueByArticle([...prev, ...next])));
         setOffset((prev) => {
           const nextOffset = prev + next.length;
-          const totalCount = resolvedTotal ?? nextOffset;
-          setHasMore(nextOffset < totalCount);
+          if (resolvedTotal !== undefined) {
+            setHasMore(nextOffset < resolvedTotal);
+          } else {
+            // If we got fewer items than requested, we've reached the end
+            setHasMore(next.length === perPage);
+          }
           return nextOffset;
         });
       })
@@ -192,7 +199,7 @@ export function ProductInfiniteGrid({
         loadingRef.current = false;
         setLoading(false);
       });
-  }, [clientTotal, fetchParams, hasMore, loading, offset]);
+  }, [clientTotal, fetchParams, hasMore, loading, offset, perPage]);
 
   useEffect(() => {
     if (!hasMore) return;
@@ -284,12 +291,12 @@ export function ProductInfiniteGrid({
           </a>
         </div>
       )}
-      {!hasMore && items.length > 0 && (
+      {/* {!hasMore && items.length > 0 && (
         <div className="not-found" style={{ gridColumn: '1 / -1' }}>
           <div className="badge">Все показано</div>
           <p>Більше товарів немає.</p>
         </div>
-      )}
+      )} */}
     </div>
   );
 }

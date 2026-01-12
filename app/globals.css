@@ -74,7 +74,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 4.5rem;
-  padding: 0 6vw 5rem;
+  padding: 0 6vw 0;
 }
 
 .route-loader {
@@ -4741,7 +4741,7 @@ body:has(.no-footer) footer.site-footer {
 
 @media (max-width: 1024px) {
   .page {
-    padding: 0 4vw 4rem;
+    padding: 0 4vw 0rem;
   }
 
   .hero {

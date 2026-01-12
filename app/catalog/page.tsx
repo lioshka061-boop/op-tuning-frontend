@@ -9,56 +9,57 @@ import { MobileFilterSheet } from '../components/MobileFilterSheet';
 const SEO_TITLE = 'Каталог тюнінгу та автотоварів';
 const SEO_DESC = 'Підбір автотоварів за маркою, моделлю та категорією. Актуальні товари та фільтри.';
 
-export function generateMetadata({
+export async function generateMetadata({
   searchParams,
 }: {
-  searchParams?: { pcat?: string; brand?: string; model?: string; gen?: string; page?: string; perPage?: string };
+  searchParams: Promise<{ pcat?: string; brand?: string; model?: string; gen?: string; page?: string; perPage?: string }>;
 }): Promise<Metadata> {
+  const params = await searchParams;
   const base = siteBase();
   const canonicalPath = '/catalog';
   const canonical = base ? `${base}${canonicalPath}` : canonicalPath;
-  const brand = (searchParams?.brand || '').trim();
-  const model = (searchParams?.model || '').trim();
-  const gen = (searchParams?.gen || '').trim();
-  const page = Number.parseInt(searchParams?.page || '1', 10) || 1;
-  const perPage = Number.parseInt(searchParams?.perPage || '24', 10) || 24;
+  const brand = (params?.brand || '').trim();
+  const model = (params?.model || '').trim();
+  const gen = (params?.gen || '').trim();
+  const page = Number.parseInt(params?.page || '1', 10) || 1;
+  const perPage = Number.parseInt(params?.perPage || '24', 10) || 24;
   const hasFilters =
-    Boolean(searchParams?.pcat) || Boolean(brand) || Boolean(model) || Boolean(gen) || page > 1 || perPage !== 24;
+    Boolean(params?.pcat) || Boolean(brand) || Boolean(model) || Boolean(gen) || page > 1 || perPage !== 24;
   if (hasFilters) {
-    return Promise.resolve({
+    return {
       title: SEO_TITLE,
       description: SEO_DESC,
       robots: { index: false, follow: true },
-    });
+    };
   }
-  return loadProductsWithMeta({ limit: 1, offset: 0, compact: true }, { revalidate: 300 }).then(
-    ({ total }) => ({
-      title: SEO_TITLE,
-      description: SEO_DESC,
-      alternates: total > 0 && SEO_DESC.trim() ? { canonical } : undefined,
-      robots: total > 0 && SEO_DESC.trim()
-        ? { index: true, follow: true }
-        : { index: false, follow: true },
-    }),
-  );
+  const { total } = await loadProductsWithMeta({ limit: 1, offset: 0, compact: true }, { revalidate: 300 });
+  return {
+    title: SEO_TITLE,
+    description: SEO_DESC,
+    alternates: total > 0 && SEO_DESC.trim() ? { canonical } : undefined,
+    robots: total > 0 && SEO_DESC.trim()
+      ? { index: true, follow: true }
+      : { index: false, follow: true },
+  };
 }
 
 export default async function CatalogPage({
   searchParams,
 }: {
-  searchParams?: { pcat?: string; brand?: string; model?: string; gen?: string; page?: string; perPage?: string };
+  searchParams: Promise<{ pcat?: string; brand?: string; model?: string; gen?: string; page?: string; perPage?: string }>;
 }) {
-  const brandSlug = (searchParams?.brand || '').toLowerCase();
-  const modelSlug = (searchParams?.model || '').toLowerCase();
-  const genSlug = (searchParams?.gen || '').toLowerCase();
-  const page = Math.max(Number.parseInt(searchParams?.page || '1', 10) || 1, 1);
+  const params = await searchParams;
+  const brandSlug = (params?.brand || '').toLowerCase();
+  const modelSlug = (params?.model || '').toLowerCase();
+  const genSlug = (params?.gen || '').toLowerCase();
+  const page = Math.max(Number.parseInt(params?.page || '1', 10) || 1, 1);
   const perPage = (() => {
-    const v = Number.parseInt(searchParams?.perPage || '24', 10);
+    const v = Number.parseInt(params?.perPage || '24', 10);
     if ([12, 24, 30].includes(v)) return v;
     return 24;
   })();
   const offset = (page - 1) * perPage;
-  const activeCategorySlug = (searchParams?.pcat || '').toLowerCase();
+  const activeCategorySlug = (params?.pcat || '').toLowerCase();
 
   const [{ items, total }, carCategories, productCategories, brandProducts] = await Promise.all([
     loadProductsWithMeta(
@@ -103,14 +104,14 @@ export default async function CatalogPage({
   const activeCategoryName =
     categories.find((c) => c.slug === activeCategorySlug)?.name || '';
 
-  const params = new URLSearchParams();
-  if (activeCategorySlug) params.set('pcat', activeCategorySlug);
-  if (brandSlug) params.set('brand', brandSlug);
-  if (modelSlug) params.set('model', modelSlug);
-  if (genSlug) params.set('gen', genSlug);
-  params.set('perPage', perPage.toString());
-  params.set('page', (page + 1).toString());
-  const nextHref = items.length + offset < total ? `/catalog?${params.toString()}` : null;
+  const urlParams = new URLSearchParams();
+  if (activeCategorySlug) urlParams.set('pcat', activeCategorySlug);
+  if (brandSlug) urlParams.set('brand', brandSlug);
+  if (modelSlug) urlParams.set('model', modelSlug);
+  if (genSlug) urlParams.set('gen', genSlug);
+  urlParams.set('perPage', perPage.toString());
+  urlParams.set('page', (page + 1).toString());
+  const nextHref = items.length + offset < total ? `/catalog?${urlParams.toString()}` : null;
 
   const resetKey = JSON.stringify({
     pcat: activeCategorySlug,
