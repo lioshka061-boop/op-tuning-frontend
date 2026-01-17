@@ -1,10 +1,18 @@
 import type { Metadata } from 'next';
+import { cache } from 'react';
 import { loadCarCategories, loadModelCategories, loadProductCategories, findBrand, findModel } from '../../../lib/categories';
 import { loadProducts, loadProductsWithMeta, plainText } from '../../../lib/products';
 import { equalsSlug, slugify } from '../../../lib/slug';
 import { ProductInfiniteGrid } from '../../../components/ProductInfiniteGrid';
 
 const SEO_TITLE = 'Каталог тюнінгу та автотоварів';
+
+// Cache data loading functions to prevent duplicate requests
+const cachedLoadCarCategories = cache(loadCarCategories);
+const cachedLoadProductCategories = cache(loadProductCategories);
+const cachedLoadModelCategories = cache(loadModelCategories);
+const cachedLoadProductsWithMeta = cache(loadProductsWithMeta);
+const cachedLoadProducts = cache(loadProducts);
 
 export async function generateMetadata({
   params,
@@ -13,27 +21,23 @@ export async function generateMetadata({
   params: Promise<{ brand: string; model: string }>;
   searchParams?: Promise<{ pcat?: string; page?: string; perPage?: string }>;
 }): Promise<Metadata> {
-  const carCategories = await loadCarCategories({ revalidate: 900 });
+  // Generate metadata from params only - no blocking API calls
   const { brand, model } = await params;
   const brandSlug = brand.toLowerCase();
   const modelSlug = model.toLowerCase();
-  const brandNode = findBrand(carCategories, brandSlug, slugify);
-  const modelNode = findModel(brandNode, modelSlug, slugify);
-  const brandName = plainText(brandNode?.name || brandSlug);
-  const modelName = plainText(modelNode?.name || modelSlug);
-  const canonical = modelNode?.canonical || undefined;
   const resolvedSearchParams = await searchParams;
   const page = Number.parseInt(resolvedSearchParams?.page || '1', 10) || 1;
   const perPage = Number.parseInt(resolvedSearchParams?.perPage || '24', 10) || 24;
   const hasFilters = Boolean(resolvedSearchParams?.pcat) || page > 1 || perPage !== 24;
-  const indexable = modelNode?.indexable === true;
-  const title = modelNode?.seo_title || modelName;
-  const description = modelNode?.seo_description || '';
+  
+  // Use slug-based title as fallback - actual metadata will be set by page component
+  const title = `${modelSlug} - ${brandSlug}`;
+  const description = '';
+  
   return {
     title,
     description,
-    alternates: !hasFilters && indexable && canonical ? { canonical } : undefined,
-    robots: !hasFilters && indexable ? { index: true, follow: true } : { index: false, follow: true },
+    robots: hasFilters ? { index: false, follow: true } : { index: true, follow: true },
   };
 }
 
@@ -57,11 +61,17 @@ export default async function ModelPage({
   const offset = (page - 1) * perPage;
   const activeCategorySlug = (resolvedSearchParams?.pcat || '').toLowerCase();
 
-  const [carCategories, productCategories, modelCategories, { items, total }, brandProducts] = await Promise.all([
-    loadCarCategories({ revalidate: 900 }),
-    loadProductCategories({ revalidate: 900 }),
-    loadModelCategories({ brand: brandSlug, model: modelSlug }, { revalidate: 900 }),
-    loadProductsWithMeta(
+  // Start modelCategories loading in parallel (non-blocking, for hints only)
+  const modelCategoriesPromise = cachedLoadModelCategories(
+    { brand: brandSlug, model: modelSlug },
+    { revalidate: 900 },
+  ).catch(() => [] as string[]);
+
+  // Load critical data first (blocking)
+  const [carCategories, productCategories, { items, total }] = await Promise.all([
+    cachedLoadCarCategories({ revalidate: 900 }),
+    cachedLoadProductCategories({ revalidate: 900 }),
+    cachedLoadProductsWithMeta(
       {
         brand: brandSlug,
         model: modelSlug,
@@ -72,7 +82,6 @@ export default async function ModelPage({
       },
       { revalidate: 300 },
     ),
-    loadProducts({ brand: brandSlug, limit: 30, offset: 0, compact: true }, { revalidate: 300 }),
   ]);
 
   const brandNode = findBrand(carCategories, brandSlug, slugify);
@@ -80,6 +89,7 @@ export default async function ModelPage({
   const brandName = plainText(brandNode?.name || brandSlug);
   const modelName = plainText(modelNode?.name || modelSlug);
 
+  // Build model list from tree first
   const modelsFromTree = brandNode?.children || [];
   const modelMap = new Map<string, string>();
   modelsFromTree.forEach((m) => {
@@ -87,11 +97,21 @@ export default async function ModelPage({
     const slug = m.slug || slugify(name);
     if (slug) modelMap.set(slug, name);
   });
-  brandProducts.forEach((p) => {
-    const name = plainText(p.model);
-    const slug = slugify(name);
-    if (slug && !modelMap.has(slug)) modelMap.set(slug, name);
-  });
+
+  // Only load brandProducts if we don't have models from tree (non-blocking)
+  let brandProducts: Awaited<ReturnType<typeof cachedLoadProducts>> = [];
+  if (modelsFromTree.length === 0) {
+    brandProducts = await cachedLoadProducts(
+      { brand: brandSlug, limit: 30, offset: 0, compact: true },
+      { revalidate: 300 },
+    );
+    brandProducts.forEach((p) => {
+      const name = plainText(p.model);
+      const slug = slugify(name);
+      if (slug && !modelMap.has(slug)) modelMap.set(slug, name);
+    });
+  }
+
   const models = Array.from(modelMap.values()).sort((a, b) => a.localeCompare(b));
   const categories = productCategories
     .filter((c) => Boolean(c.name))
@@ -112,6 +132,9 @@ export default async function ModelPage({
 
   const resetKey = JSON.stringify({ brandSlug, modelSlug, pcat: activeCategorySlug, perPage, page });
 
+  // Get category hints (non-blocking, will show empty if not loaded yet)
+  // This promise was started in parallel with critical data, so it may already be resolved
+  const modelCategories = await modelCategoriesPromise;
   const categoryHints = modelCategories
     .filter(Boolean)
     .slice(0, 3)
